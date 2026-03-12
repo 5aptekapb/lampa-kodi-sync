@@ -18,9 +18,9 @@
         return;
     }
 
-    var NODE_EXE_PATH = 'C:\\Program Files\\nodejs\\node.exe';   // ? ИЗМЕНИ НА СВОЙ
-    var PROXY_SCRIPT_PATH = 'C:\\lampa-plugins\\kodi-proxy.js'; // ? ИЗМЕНИ НА СВОЙ
-    var PROXY_URL = 'http://localhost:8080';
+    var NODE_EXE_PATH = 'C:\\Program Files\\nodejs\\node.exe';   // ← ИЗМЕНИ НА СВОЙ
+    var PROXY_SCRIPT_PATH = 'C:\\lampa-plugins\\kodi-proxy.js'; // ← ИЗМЕНИ НА СВОЙ
+    var PROXY_URL = 'http://localhost:8081';                    // ← теперь 8081
     var MAX_FAILS = 1;
 
     var pollingInterval = null;
@@ -97,7 +97,7 @@
         });
 
         const openReq = node_http.request({
-            hostname: '127.0.0.1', port: 9090, path: '/jsonrpc', method: 'POST',
+            hostname: '127.0.0.1', port: 8080, path: '/jsonrpc', method: 'POST',  // ← 8080
             headers: {'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(openBody)}
         }, (res) => {
             res.on('data', () => {});
@@ -124,7 +124,7 @@
         });
 
         const seekReq = node_http.request({
-            hostname: '127.0.0.1', port: 9090, path: '/jsonrpc', method: 'POST',
+            hostname: '127.0.0.1', port: 8080, path: '/jsonrpc', method: 'POST',  // ← 8080
             headers: {'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(seekBody)}
         }, (res) => { res.on('data', () => {}); });
         seekReq.on('error', (err) => console.error('Kodi Seek error:', err));
