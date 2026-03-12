@@ -15,8 +15,8 @@
 
     if (!isWindows || !node_cp || !node_http) return;
 
-    var NODE_EXE_PATH = 'C:\\Program Files\\nodejs\\node.exe'; // ← свій шлях
-    var PROXY_SCRIPT_PATH = 'C:\\lampa-plugins\\kodi-proxy.js'; // ← свій шлях
+    var NODE_EXE_PATH = 'C:\\Program Files\\nodejs\\node.exe'; // ← свій
+    var PROXY_SCRIPT_PATH = 'C:\\lampa-plugins\\kodi-proxy.js'; // ← свій
     var PROXY_URL = 'http://localhost:8081';
 
     var pollingInterval = null;
@@ -45,7 +45,7 @@
     async function pollKodiViaProxy() {
         try {
             const response = await fetch(PROXY_URL);
-            if (!response.ok) throw new Error(response.status);
+            if (!response.ok) return;
 
             const data = await response.text();
             const posMatch = data.match(/position:(\d{2}:\d{2}:\d{2})/);
@@ -55,14 +55,12 @@
                 const curSec = timeToSeconds(posMatch[1]);
                 const durSec = durMatch ? timeToSeconds(durMatch[1]) : 0;
 
-                if (curSec > 5 && currentTimeline) {  // >5 щоб ігнорувати старт 0
+                if (curSec > 5 && currentTimeline) {
                     currentTimeline.time = curSec;
-                    if (durSec > 0) {
-                        currentTimeline.duration = durSec;
-                        currentTimeline.percent = (curSec / durSec) * 100;
-                    }
+                    currentTimeline.duration = durSec || currentTimeline.duration;
+                    currentTimeline.percent = durSec ? (curSec / durSec) * 100 : currentTimeline.percent;
                     Lampa.Timeline.update(currentTimeline);
-                    Lampa.Noty.show('Kodi → Lampa: таймкод ' + posMatch[1]);
+                    Lampa.Noty.show('Оновлено таймкод з Kodi: ' + posMatch[1]);
                 }
             }
         } catch (e) {}
@@ -90,17 +88,18 @@
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
                 if (startSec > 10) {
-                    Lampa.Noty.show('Чекаємо 15 сек для seek...');
+                    Lampa.Noty.show('Чекаємо буферизацію (15–25 сек) для seek...');
                     let attempts = 0;
-                    const seekInterval = setInterval(() => {
-                        if (attempts >= 3) {
-                            clearInterval(seekInterval);
+                    const seekTimer = setInterval(() => {
+                        if (attempts >= 5) {
+                            clearInterval(seekTimer);
+                            Lampa.Noty.show('Seek не спрацював після 5 спроб');
                             return;
                         }
                         seekInKodi(startSec);
                         attempts++;
-                    }, 3000);
-                    setTimeout(() => clearInterval(seekInterval), 15000);
+                    }, 4000); // кожні 4 сек, до 20 сек
+                    setTimeout(() => clearInterval(seekTimer), 25000);
                 }
             });
         });
@@ -113,7 +112,10 @@
         const seekBody = JSON.stringify({
             jsonrpc: "2.0",
             method: "Player.Seek",
-            params: { playerid: 0, value: { seconds: Math.floor(seconds) } },
+            params: {
+                playerid: 0,
+                value: { seconds: Math.floor(seconds) }
+            },
             id: 1
         });
 
@@ -124,10 +126,12 @@
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
-                Lampa.Noty.show('Seek спроба на ' + seconds + ' сек');
+                Lampa.Noty.show('Seek спроба на ' + seconds + ' сек (відповідь: ' + data.trim() + ')');
             });
         });
-        seekReq.on('error', () => {});
+        seekReq.on('error', (err) => {
+            Lampa.Noty.show('Seek помилка: ' + err.message);
+        });
         seekReq.write(seekBody);
         seekReq.end();
     }
@@ -148,7 +152,7 @@
 
                 setTimeout(() => {
                     openVideoInKodi(videoUrl, targetTimeSec);
-                    setTimeout(startPolling, 5000);
+                    setTimeout(startPolling, 6000);
                 }, 2000);
             } catch (err) {
                 stopPolling();
