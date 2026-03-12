@@ -18,12 +18,10 @@
         return;
     }
 
-    // ── НАЛАШТУВАННЯ ── (тільки ці два рядки потрібно змінити під себе)
-    var NODE_EXE_PATH    = 'C:\\Program Files\\nodejs\\node.exe';          // ← твій шлях до node.exe
-    var PROXY_SCRIPT_PATH = 'C:\\lampa-plugins\\kodi-proxy.js';           // ← твій шлях до kodi-proxy.js
-
+    var NODE_EXE_PATH = 'C:\\Program Files\\nodejs\\node.exe';          // ← ЗМІНИ НА СВІЙ
+    var PROXY_SCRIPT_PATH = 'C:\\lampa-plugins\\kodi-proxy.js';        // ← ЗМІНИ НА СВІЙ
     var PROXY_URL = 'http://localhost:8081';
-    var MAX_FAILS = 1;
+    var MAX_FAILS = 3;
 
     var pollingInterval = null;
     var currentTimeline = null;
@@ -44,7 +42,7 @@
         if (pollingInterval) {
             clearInterval(pollingInterval);
             pollingInterval = null;
-            Lampa.Noty.show('Kodi: Синхронізацію зупинено');
+            // Lampa.Noty.show('Kodi: Синхронізацію зупинено');
         }
         if (proxyProcess) {
             try { proxyProcess.kill(); } catch (err) {}
@@ -55,18 +53,22 @@
     async function pollKodiViaProxy() {
         try {
             const response = await fetch(PROXY_URL);
-            if (!response.ok) throw new Error('Proxy response not OK: ' + response.status);
-            
+            if (!response.ok) throw new Error('Proxy status: ' + response.status);
+
             const data = await response.text();
-            const posMatch = data.match(/id="positionstring"[^>]*>\s*(.*?)\s*</i);
-            const durMatch = data.match(/id="durationstring"[^>]*>\s*(.*?)\s*</i);
+            console.log('[Plugin] Proxy відповідь:', data.trim());
+
+            const posMatch = data.match(/position:(\d{2}:\d{2}:\d{2})/);
+            const durMatch = data.match(/duration:(\d{2}:\d{2}:\d{2})/);
 
             if (posMatch && posMatch[1]) {
                 failCount = 0;
                 const curSec = timeToSeconds(posMatch[1]);
-                const durSec = (durMatch && durMatch[1]) ? timeToSeconds(durMatch[1]) : 0;
+                const durSec = durMatch ? timeToSeconds(durMatch[1]) : 0;
 
-                if (curSec >= 0 && currentTimeline) {
+                console.log('[Plugin] Отримано таймкод:', curSec, '/', durSec);
+
+                if (curSec > 0 && currentTimeline) {
                     currentTimeline.time = curSec;
                     if (durSec > 0) {
                         currentTimeline.duration = durSec;
@@ -75,11 +77,11 @@
                     Lampa.Timeline.update(currentTimeline);
                 }
             } else {
-                throw new Error('No positionstring found in proxy response');
+                throw new Error('Не знайдено position/duration');
             }
         } catch (error) {
             failCount++;
-            console.error('[Kodi Plugin] Poll error:', error.message);
+            console.error('[Plugin] Poll помилка:', error.message);
             if (failCount > MAX_FAILS) stopPolling();
         }
     }
@@ -87,16 +89,16 @@
     function startPolling() {
         if (pollingInterval) clearInterval(pollingInterval);
         failCount = 0;
-        pollingInterval = setInterval(pollKodiViaProxy, 2000);
-        pollKodiViaProxy(); // запуск відразу
+        pollingInterval = setInterval(pollKodiViaProxy, 1500);
+        pollKodiViaProxy();
     }
 
     function openVideoInKodi(url, startSec) {
         const openBody = JSON.stringify({
-            "jsonrpc": "2.0",
-            "method": "Player.Open",
-            "params": { "item": { "file": url } },
-            "id": 1
+            jsonrpc: "2.0",
+            method: "Player.Open",
+            params: { item: { file: url } },
+            id: 1
         });
 
         const openReq = node_http.request({
@@ -106,30 +108,29 @@
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
-                console.log('[Kodi Plugin] Player.Open відповідь:', data);
-                if (startSec > 5) {
-                    console.log('[Kodi Plugin] Чекаємо 4 секунди перед seek...');
+                console.log('[Plugin] Player.Open відповідь:', data);
+                if (startSec > 10) {
+                    console.log('[Plugin] Чекаємо 10 секунд перед seek...');
                     setTimeout(() => {
-                        console.log('[Kodi Plugin] Відправляємо seek на', startSec, 'секунд');
-                        seekInKodi(startSec);
-                    }, 4000); // збільшено до 4 секунд — зазвичай вистачає для старту потоку
+                        seekInKodi(startSec, 0);
+                        setTimeout(() => seekInKodi(startSec, 1), 1500);
+                    }, 10000);
                 }
             });
         });
         openReq.on('error', (err) => {
-            console.error('[Kodi Plugin] Kodi Open error:', err.message);
-            Lampa.Noty.show('Kodi: Не вдалося відкрити відео');
+            console.error('[Plugin] Open помилка:', err.message);
         });
         openReq.write(openBody);
         openReq.end();
     }
 
-    function seekInKodi(seconds) {
+    function seekInKodi(seconds, playerId) {
         const seekBody = JSON.stringify({
-            "jsonrpc": "2.0",
-            "method": "Player.Seek",
-            "params": { "playerid": 1, "value": { "seconds": Math.floor(seconds) } },
-            "id": 1
+            jsonrpc: "2.0",
+            method: "Player.Seek",
+            params: { playerid: playerId, value: { seconds: Math.floor(seconds) } },
+            id: 1
         });
 
         const seekReq = node_http.request({
@@ -139,11 +140,11 @@
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
-                console.log('[Kodi Plugin] Seek відповідь:', data);
+                console.log(`[Plugin] Seek playerid ${playerId} відповідь:`, data);
             });
         });
         seekReq.on('error', (err) => {
-            console.error('[Kodi Plugin] Kodi Seek error:', err.message);
+            console.error(`[Plugin] Seek playerid ${playerId} помилка:`, err.message);
         });
         seekReq.write(seekBody);
         seekReq.end();
@@ -151,31 +152,25 @@
 
     function initExternalPlayer() {
         Lampa.Player.play = function (data) {
-            stopPolling(); 
-            
+            stopPolling();
+
             var videoUrl = data.url || data.file || "";
-            if (!videoUrl) {
-                console.warn('[Kodi Plugin] Немає URL для відтворення');
-                return;
-            }
+            if (!videoUrl) return;
 
             currentTimeline = data.timeline;
             var targetTimeSec = (currentTimeline && currentTimeline.time) ? currentTimeline.time : 0;
-            console.log('[Kodi Plugin] Запуск відео з таймкодом:', targetTimeSec, 'секунд');
+            console.log('[Plugin] Запуск з таймкодом:', targetTimeSec);
 
             try {
-                proxyProcess = node_cp.spawn(NODE_EXE_PATH, [PROXY_SCRIPT_PATH], { 
-                    detached: true, 
-                    stdio: 'ignore' 
-                });
+                proxyProcess = node_cp.spawn(NODE_EXE_PATH, [PROXY_SCRIPT_PATH], { detached: true, stdio: 'ignore' });
                 if (proxyProcess.unref) proxyProcess.unref();
 
                 setTimeout(function() {
                     openVideoInKodi(videoUrl, targetTimeSec);
-                    setTimeout(startPolling, 3000); // даємо трохи часу після відкриття
-                }, 1000);
+                    setTimeout(startPolling, 4000);
+                }, 1500);
             } catch (err) {
-                console.error('[Kodi Plugin] Помилка запуску проксі або Kodi:', err);
+                console.error('[Plugin] Помилка запуску:', err);
                 stopPolling();
             }
         };
