@@ -108,23 +108,32 @@
             currentTimeline = data.timeline;
             var targetTimeSec = (currentTimeline && currentTimeline.time) ? currentTimeline.time : 0;
 
-            try {
-                proxyProcess = node_cp.spawn(NODE_EXE_PATH, [PROXY_SCRIPT_PATH], { detached: true, stdio: 'ignore' });
-                if (proxyProcess.unref) proxyProcess.unref();
+   try {
+        proxyProcess = node_cp.spawn(NODE_EXE_PATH, [PROXY_SCRIPT_PATH], { detached: true, stdio: 'ignore' });
+        if (proxyProcess.unref) proxyProcess.unref();
 
-                setTimeout(function() {
-                    var args = [videoUrl];
-                    if (targetTimeSec > 5) {
-                        args.push('/start', targetTimeSec * 1000);
-                    }
-                    var playerProcess = node_cp.spawn(MPC_PATH, args, { detached: true, stdio: 'ignore' });
-                    if (playerProcess.unref) playerProcess.unref();
+        proxyProcess.on('error', function(err) {
+            Lampa.Noty.show('Proxy error: ' + err.message);
+        });
 
-                    setTimeout(startPolling, 2000);
-                }, 1000);
-            } catch (err) {
-                stopPolling();
+        setTimeout(function() {
+            fetch(PROXY_URL)
+                .then(function(r) { Lampa.Noty.show('Proxy OK: ' + r.status); })
+                .catch(function(e) { Lampa.Noty.show('Proxy FAIL: ' + e.message); });
+
+            var args = [videoUrl];
+            if (targetTimeSec > 5) {
+            args.push('/start', targetTimeSec * 1000);
             }
+            var playerProcess = node_cp.spawn(MPC_PATH, args, { detached: true, stdio: 'ignore' });
+            if (playerProcess.unref) playerProcess.unref();
+
+            setTimeout(startPolling, 2000);
+        }, 1000);
+    } catch (err) {
+        Lampa.Noty.show('Spawn error: ' + err.message);
+        stopPolling();
+    }
         };
     }
 
