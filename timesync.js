@@ -109,7 +109,7 @@
             var targetTimeSec = (currentTimeline && currentTimeline.time) ? currentTimeline.time : 0;
 
             try {
-                proxyProcess = node_cp.spawn('cmd.exe', ['/c', 'start', '""', '/min', NODE_EXE_PATH, PROXY_SCRIPT_PATH], { detached: true, stdio: 'ignore' });
+                proxyProcess = node_cp.spawn(NODE_EXE_PATH, [PROXY_SCRIPT_PATH], { detached: true, stdio: 'ignore' });
                 if (proxyProcess.unref) proxyProcess.unref();
 
                 setTimeout(function() {
@@ -133,3 +133,8 @@
     else Lampa.Listener.follow('app', (e) => { if (e.type == 'ready') initExternalPlayer(); });
 
 })();
+
+
+
+
+   
