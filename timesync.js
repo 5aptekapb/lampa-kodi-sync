@@ -1,7 +1,11 @@
 (function () {
     'use strict';
 
+    // --- ПЕРЕВІРКА ПЛАТФОРМИ ---
+    // Перевіряємо, чи це Windows
     var isWindows = navigator.platform.indexOf('Win') > -1 || navigator.userAgent.indexOf('Windows') > -1;
+    
+    // Перевіряємо наявність середовища Node.js (NW.js / Electron), яке є тільки в програмі для ПК
     var req = window.require || window.nodeRequire;
     var node_cp = null;
 
@@ -11,15 +15,17 @@
         } catch (e) {}
     }
 
+    // Якщо це не Windows або це просто браузер/ТВ/Андроїд — повністю виходимо з плагіна.
+    // Це збереже стандартний плеєр Lampa на інших пристроях недоторканим.
     if (!isWindows || !node_cp) {
         console.log('MPC-BE Plugin: Запуск скасовано. Це не Windows PC середовище.');
         return;
     }
 
     // --- НАЛАШТУВАННЯ ---
-    var MPC_PATH = 'C:\\Program Files\\MPC-BE\\mpc-be64.exe';
-    var NODE_EXE_PATH = 'C:\\Program Files\\nodejs\\node.exe';
-    var PROXY_SCRIPT_PATH = 'C:\\lampa-plugins\\mpc-proxy.js';
+    var MPC_PATH = 'C:\\Program Files\\MPC-BE\\mpc-be64.exe'; // Вкажіть правильний шлях до вашого плеєру!!!
+    var NODE_EXE_PATH = 'C:\\Program Files\\nodejs\\node.exe'; // Вкажіть правильний шлях до вашого node.exe !!!
+    var PROXY_SCRIPT_PATH = 'C:\\lampa-plugins\\mpc-proxy.js';  // Вкажіть правильний шлях до вашого проксі !!!
     var PROXY_URL = 'http://localhost:8080';
     var MAX_FAILS = 1;
 
@@ -52,12 +58,12 @@
             proxyProcess = null;
         }
     }
-
+    
     async function pollMpcViaProxy() {
         try {
             const response = await fetch(PROXY_URL);
             if (!response.ok) throw new Error();
-
+            
             const data = await response.text();
             const posMatch = data.match(/id="positionstring"[^>]*>\s*(.*?)\s*</i);
             const durMatch = data.match(/id="durationstring"[^>]*>\s*(.*?)\s*</i);
@@ -92,9 +98,10 @@
     }
 
     function initExternalPlayer() {
+        // Підміняємо плеєр ТІЛЬКИ на Windows
         Lampa.Player.play = function (data) {
-            stopPolling();
-
+            stopPolling(); 
+            
             var videoUrl = data.url || data.file || "";
             if (!videoUrl) return;
 
@@ -102,17 +109,10 @@
             var targetTimeSec = (currentTimeline && currentTimeline.time) ? currentTimeline.time : 0;
 
             try {
-                proxyProcess = node_cp.spawn('cmd.exe', [
-                    '/c', 'start', '""', '/min',
-                    NODE_EXE_PATH, PROXY_SCRIPT_PATH
-                ], {
-                    detached: true,
-                    stdio: 'ignore',
-                    shell: false
-                });
+                proxyProcess = node_cp.spawn('cmd.exe', ['/c', 'start', '""', '/min', NODE_EXE_PATH, PROXY_SCRIPT_PATH], { detached: true, stdio: 'ignore' });
                 if (proxyProcess.unref) proxyProcess.unref();
 
-                setTimeout(function () {
+                setTimeout(function() {
                     var args = [videoUrl];
                     if (targetTimeSec > 5) {
                         args.push('/start', targetTimeSec * 1000);
@@ -120,8 +120,8 @@
                     var playerProcess = node_cp.spawn(MPC_PATH, args, { detached: true, stdio: 'ignore' });
                     if (playerProcess.unref) playerProcess.unref();
 
-                    setTimeout(startPolling, 4000);
-                }, 3000);
+                    setTimeout(startPolling, 2000);
+                }, 1000);
             } catch (err) {
                 stopPolling();
             }
