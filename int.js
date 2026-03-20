@@ -2119,7 +2119,7 @@
         if (settings.buttons_style_mode === 'all' || settings.buttons_style_mode === 'main2') {
             showAllButtons();
         }
-        
+    }    
     // Запуск после готовности приложения
     if (window.appready) {
         startPlugin();
