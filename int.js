@@ -142,6 +142,9 @@
         });
     }
     function showAboutPlugin() {}
+    function loadExternalThemes(callback) { callback(null, null); }
+    function applyTheme(theme) {}
+    function newInfoPanel() {}
     
     // Функция для добавления лейблов на карточки
     function changeMovieTypeLabels() {
