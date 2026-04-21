@@ -8,10 +8,12 @@
     // Перевіряємо наявність середовища Node.js (NW.js / Electron), яке є тільки в програмі для ПК
     var req = window.require || window.nodeRequire;
     var node_cp = null;
+    var node_fs = null;
 
     if (isWindows && req) {
         try {
             node_cp = req('child_process');
+            node_fs = req('fs');
         } catch (e) {}
     }
 
@@ -121,6 +123,12 @@
         // Підміняємо плеєр ТІЛЬКИ на Windows
         Lampa.Player.play = function (data) {
             stopPolling(); 
+
+            if (node_fs) {
+            node_fs.writeFileSync('C:\\lampa_debug.txt', JSON.stringify(data, null, 2));
+            }
+            Lampa.Noty.show('Debug saved to C:\\lampa_debug.txt');
+            
             Lampa.Noty.show('PLAY called');
             Lampa.Noty.show('DATA: ' + JSON.stringify(Object.keys(data)));
     
