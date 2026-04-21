@@ -104,6 +104,7 @@
             
             var videoUrl = data.url || data.file || "";
             if (!videoUrl) return;
+            Lampa.Noty.show('URL: ' + videoUrl.substring(0, 100));
 
             currentTimeline = data.timeline;
             var targetTimeSec = (currentTimeline && currentTimeline.time) ? currentTimeline.time : 0;
