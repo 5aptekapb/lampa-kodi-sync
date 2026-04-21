@@ -101,8 +101,10 @@
         // Підміняємо плеєр ТІЛЬКИ на Windows
         Lampa.Player.play = function (data) {
             stopPolling(); 
-            
-            var videoUrl = data.url || data.file || "";
+                // Дебаг - покажет все ключи объекта data
+            Lampa.Noty.show('DATA: ' + JSON.stringify(Object.keys(data)));
+    
+            var videoUrl = data.url || data.file || data.src || data.stream || data.path || data.link || "";
             if (!videoUrl) return;
             Lampa.Noty.show('URL: ' + videoUrl.substring(0, 100));
 
