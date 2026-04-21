@@ -98,10 +98,20 @@
     }
 
     function initExternalPlayer() {
+
+        Lampa.Player.open = function (data) {
+        Lampa.Noty.show('OPEN called');
+        };
+        Lampa.Player.launch = function (data) {
+        Lampa.Noty.show('LAUNCH called');
+        };
+        Lampa.Player.start = function (data) {
+        Lampa.Noty.show('START called');
+        };
         // Підміняємо плеєр ТІЛЬКИ на Windows
         Lampa.Player.play = function (data) {
             stopPolling(); 
-                // Дебаг - покажет все ключи объекта data
+            Lampa.Noty.show('PLAY called');
             Lampa.Noty.show('DATA: ' + JSON.stringify(Object.keys(data)));
     
             var videoUrl = data.url || data.file || data.src || data.stream || data.path || data.link || "";
