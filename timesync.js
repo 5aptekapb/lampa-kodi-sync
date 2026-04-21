@@ -110,12 +110,17 @@
             var targetTimeSec = (currentTimeline && currentTimeline.time) ? currentTimeline.time : 0;
 
    try {
-        proxyProcess = node_cp.spawn(NODE_EXE_PATH, [PROXY_SCRIPT_PATH], { detached: true, stdio: 'ignore' });
-        if (proxyProcess.unref) proxyProcess.unref();
+       proxyProcess = node_cp.spawn(NODE_EXE_PATH, [PROXY_SCRIPT_PATH], { stdio: 'ignore' });
 
-        proxyProcess.on('error', function(err) {
-            Lampa.Noty.show('Proxy error: ' + err.message);
-        });
+       if (proxyProcess && proxyProcess.unref) proxyProcess.unref();
+
+       if (proxyProcess) {
+          proxyProcess.on('error', function(err) {
+              Lampa.Noty.show('Proxy error: ' + err.message);
+          });
+       } else {
+          Lampa.Noty.show('Proxy: не вдалось запустити процес');
+       }
 
         setTimeout(function() {
             fetch(PROXY_URL)
