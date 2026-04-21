@@ -100,39 +100,16 @@
     }
 
     function initExternalPlayer() {
-        Lampa.Listener.follow('torrent', function(e) {
-        Lampa.Noty.show('TORRENT EVENT: ' + e.type);
-        if (e.url) Lampa.Noty.show('T-URL: ' + e.url.substring(0, 100));
-        });
-
-        Lampa.Listener.follow('video', function(e) {
-        Lampa.Noty.show('VIDEO EVENT: ' + e.type);
-        });
-        Lampa.Listener.follow('player', function(e) {
-        Lampa.Noty.show('EVENT: ' + e.type);
-        });
-        Lampa.Player.open = function (data) {
-        Lampa.Noty.show('OPEN called');
-        };
-        Lampa.Player.launch = function (data) {
-        Lampa.Noty.show('LAUNCH called');
-        };
-        Lampa.Player.start = function (data) {
-        Lampa.Noty.show('START called');
-        };
-        // Підміняємо плеєр ТІЛЬКИ на Windows
-        Lampa.Player.play = function (data) {
-            stopPolling(); 
-
-            Lampa.Noty.show('KEYS: ' + JSON.stringify(Object.keys(data)));
-            Lampa.Noty.show('url=' + data.url);
-            Lampa.Noty.show('file=' + data.file);
-            Lampa.Noty.show('src=' + data.src);
-    
-            var videoUrl = data.url || data.file || data.src || data.stream || data.path || data.link || "";
+        Lampa.Player.listener.follow('play', function(e) {
+            stopPolling();
+        
+            var data = e.data || e;
+            var videoUrl = data.url || data.file || data.src || data.stream || "";
+        
+            Lampa.Noty.show('PLAY EVENT url=' + videoUrl.substring(0, 100));
+        
             if (!videoUrl) return;
-            Lampa.Noty.show('URL: ' + videoUrl.substring(0, 100));
-
+        
             currentTimeline = data.timeline;
             var targetTimeSec = (currentTimeline && currentTimeline.time) ? currentTimeline.time : 0;
 
@@ -167,7 +144,7 @@
         Lampa.Noty.show('Spawn error: ' + err.message);
         stopPolling();
     }
-        };
+        });
     }
 
     Lampa.Player.listener.follow('destroy', stopPolling);
