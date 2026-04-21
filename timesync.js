@@ -98,7 +98,9 @@
     }
 
     function initExternalPlayer() {
-
+        Lampa.Listener.follow('player', function(e) {
+        Lampa.Noty.show('EVENT: ' + e.type);
+        });
         Lampa.Player.open = function (data) {
         Lampa.Noty.show('OPEN called');
         };
