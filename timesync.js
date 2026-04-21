@@ -98,6 +98,14 @@
     }
 
     function initExternalPlayer() {
+        Lampa.Listener.follow('torrent', function(e) {
+        Lampa.Noty.show('TORRENT EVENT: ' + e.type);
+        if (e.url) Lampa.Noty.show('T-URL: ' + e.url.substring(0, 100));
+        });
+
+        Lampa.Listener.follow('video', function(e) {
+        Lampa.Noty.show('VIDEO EVENT: ' + e.type);
+        });
         Lampa.Listener.follow('player', function(e) {
         Lampa.Noty.show('EVENT: ' + e.type);
         });
