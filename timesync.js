@@ -124,13 +124,10 @@
         Lampa.Player.play = function (data) {
             stopPolling(); 
 
-            if (node_fs) {
-            node_fs.writeFileSync('C:\\lampa_debug.txt', JSON.stringify(data, null, 2));
-            }
-            Lampa.Noty.show('Debug saved to C:\\lampa_debug.txt');
-            
-            Lampa.Noty.show('PLAY called');
-            Lampa.Noty.show('DATA: ' + JSON.stringify(Object.keys(data)));
+            Lampa.Noty.show('KEYS: ' + JSON.stringify(Object.keys(data)));
+            Lampa.Noty.show('url=' + data.url);
+            Lampa.Noty.show('file=' + data.file);
+            Lampa.Noty.show('src=' + data.src);
     
             var videoUrl = data.url || data.file || data.src || data.stream || data.path || data.link || "";
             if (!videoUrl) return;
