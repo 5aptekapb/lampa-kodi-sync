@@ -102,8 +102,6 @@
             stopPolling();
 
             var videoUrl = data.url || data.file || data.src || data.stream || data.path || data.link || "";
-            Lampa.Noty.show('KEYS:' + JSON.stringify(Object.keys(data)));
-            Lampa.Noty.show('url=' + data.url + ' file=' + data.file);
             if (!videoUrl) return;
 
             currentTimeline = data.timeline;
