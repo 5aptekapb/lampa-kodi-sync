@@ -98,34 +98,36 @@
     }
 
     function initExternalPlayer() {
-        // Підміняємо плеєр ТІЛЬКИ на Windows
-        Lampa.Player.play = function (data) {
-            stopPolling(); 
-            
-            var videoUrl = data.url || data.file || "";
+        function myPlay(data) {
+            stopPolling();
+
+            var videoUrl = data.url || data.file || data.src || data.stream || data.path || data.link || "";
             if (!videoUrl) return;
 
             currentTimeline = data.timeline;
             var targetTimeSec = (currentTimeline && currentTimeline.time) ? currentTimeline.time : 0;
 
             try {
-                proxyProcess = node_cp.spawn(NODE_EXE_PATH, [PROXY_SCRIPT_PATH], { detached: true, stdio: 'ignore' });
-                if (proxyProcess.unref) proxyProcess.unref();
+                proxyProcess = node_cp.spawn(NODE_EXE_PATH, [PROXY_SCRIPT_PATH], { stdio: 'ignore' });
+                if (proxyProcess && proxyProcess.unref) proxyProcess.unref();
 
-                setTimeout(function() {
+                 setTimeout(function() {
                     var args = [videoUrl];
-                    if (targetTimeSec > 5) {
-                        args.push('/start', targetTimeSec * 1000);
-                    }
+                    if (targetTimeSec > 5) args.push('/start', targetTimeSec * 1000);
                     var playerProcess = node_cp.spawn(MPC_PATH, args, { detached: true, stdio: 'ignore' });
                     if (playerProcess.unref) playerProcess.unref();
-
                     setTimeout(startPolling, 2000);
                 }, 1000);
             } catch (err) {
                 stopPolling();
             }
-        };
+        }
+
+        Lampa.Player.play = myPlay;
+        // Переназначаем каждые 2с чтобы timesync.js не перебил
+        setInterval(function() {
+            Lampa.Player.play = myPlay;
+        }, 2000);
     }
 
     Lampa.Player.listener.follow('destroy', stopPolling);
