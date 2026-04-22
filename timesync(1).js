@@ -114,7 +114,7 @@
                 if (proxyProcess && proxyProcess.unref) proxyProcess.unref();
 
                  setTimeout(function() {
-                    var cleanUrl = videoUrl.replace(/[&?]preload$/i, '').replace(/[&?]preload&/i, '&');
+                    var cleanUrl = videoUrl.replace('&preload', '&play').replace('?preload', '?play');
                     var args = [cleanUrl];
                     if (targetTimeSec > 5) args.push('/start', targetTimeSec * 1000);
                     var playerProcess = node_cp.spawn(MPC_PATH, args, { detached: true, stdio: 'ignore' });
